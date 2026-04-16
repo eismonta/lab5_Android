@@ -21,7 +21,6 @@ public class LevelFragment extends Fragment implements SensorEventListener {
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
-
     private TextView tvPitch, tvRoll;
     private EditText etTargetAngle;
     private View lineHorizon, rootView;
@@ -30,7 +29,6 @@ public class LevelFragment extends Fragment implements SensorEventListener {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_level, container, false);
-
         rootView = v.findViewById(R.id.levelRootView);
         tvPitch = v.findViewById(R.id.tvPitch);
         tvRoll = v.findViewById(R.id.tvRoll);
@@ -41,7 +39,6 @@ public class LevelFragment extends Fragment implements SensorEventListener {
         if (sensorManager != null) {
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
-
         return v;
     }
 
@@ -50,31 +47,39 @@ public class LevelFragment extends Fragment implements SensorEventListener {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             float x = event.values[0];
             float y = event.values[1];
-            float z = event.values[2];
 
-            double pitch = Math.toDegrees(Math.atan2(y, z));
-            double roll = Math.toDegrees(Math.atan2(-x, Math.sqrt(y * y + z * z)));
+            double realAngle = Math.toDegrees(Math.atan2(-x, y));
+            if (realAngle < 0) realAngle += 360;
 
-            updateUI(pitch, roll);
+            double displayAngle = realAngle % 180;
+            if (displayAngle > 90) {
+                displayAngle = 180 - displayAngle;
+            }
+
+            double pitch = Math.abs(Math.toDegrees(Math.atan2(y, 9.8)));
+            if (pitch > 90) pitch = 180 - pitch;
+
+            updateUI(pitch, displayAngle, realAngle);
         }
     }
 
-    private void updateUI(double pitch, double roll) {
+    private void updateUI(double pitch, double displayAngle, double realAngle) {
         tvPitch.setText(String.format("Нахил: %.1f°", pitch));
-        tvRoll.setText(String.format("Поворот: %.1f°", roll));
-        lineHorizon.setRotation((float) -roll);
+        tvRoll.setText(String.format("Поворот: %.1f°", displayAngle));
+
+        lineHorizon.setRotation((float) -realAngle);
 
         double target = 0;
         String input = etTargetAngle.getText().toString();
         if (!input.isEmpty()) {
             try {
                 target = Double.parseDouble(input);
-            } catch (NumberFormatException e) {
+            } catch (Exception e) {
                 target = 0;
             }
         }
 
-        if (Math.abs(Math.abs(roll) - Math.abs(target)) < 1.5) {
+        if (Math.abs(displayAngle - target) < 1.5) {
             rootView.setBackgroundColor(0xFFC8E6C9);
         } else {
             rootView.setBackgroundColor(0xFFFFFFFF);
@@ -82,8 +87,7 @@ public class LevelFragment extends Fragment implements SensorEventListener {
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-    }
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     @Override
     public void onResume() {

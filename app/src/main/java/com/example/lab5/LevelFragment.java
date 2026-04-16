@@ -64,7 +64,6 @@ public class LevelFragment extends Fragment implements SensorEventListener {
         tvRoll.setText(String.format("Поворот: %.1f°", roll));
         lineHorizon.setRotation((float) -roll);
 
-        // Отримання цільового кута
         double target = 0;
         String input = etTargetAngle.getText().toString();
         if (!input.isEmpty()) {
